@@ -1,0 +1,41 @@
+version: '3.7'
+
+services:
+  web: 
+    build: ./WebApp
+    container_name: web
+    restart: always
+    volumes:
+      - ./WebApp:/app
+    environment: 
+      - FLASK_ENV=development
+    ports:
+      - "8000:8080"
+    expose:
+      - 8080
+  
+  api:
+    build: "./API"
+    container_name: api
+    restart: always
+    volumes:
+      - ./API:/app
+    environment: 
+      - FLASK_ENV=development
+    ports:
+      - "8001:7070"
+    expose:
+      - 7070
+
+  nginx:
+    build: ./nginx
+    container_name: nginx
+    restart: always
+    environment:
+      - FLASK_ENV=development
+    ports:
+      - "80:80"
+      - "70:70"
+      - "70:70"
+    
+      
