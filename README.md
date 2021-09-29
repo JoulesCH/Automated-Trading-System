@@ -4,12 +4,13 @@
 Práctica 2
 ### Pre-requerimientos ⚙️
 
-Investigar los siguientes conceptos:
-- Sistema automático de negociación (Automated Trading System)
-- Estrategia de negociación (Trading Strategy)
-- Negociación de Alta Frecuencia (HFT)
-- Posición Corta (Short Position)
-- Posición Larga (Long Position)
+- **Marco Teórico** Investigar los siguientes conceptos:
+  - Sistema automático de negociación (Automated Trading System)
+  - Estrategia de negociación (Trading Strategy)
+  - Negociación de Alta Frecuencia (HFT)
+  - Posición Corta (Short Position)
+  - Posición Larga (Long Position)
+- **Diagrama** Entregar en forma de diagrama de bloques o pseudocódigo el algoritmo que se diseñó para generar el programa.
 
 ### Requerimientos 📋
 El código debe ser de tipo .c o .cpp. El código debe estar **tabulado y comentado**.
