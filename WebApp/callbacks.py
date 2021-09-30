@@ -46,8 +46,7 @@ def update_output(content, filename, last_modified):
         except:
             return dbc.Alert("Hay un dato no válido", color="danger"),
 
-        fig = go.Figure(data = [go.Scatter(x=list(range(len(listDecoded))), y=listDecoded)])
-        fig.add_trace(go.Scatter(x=list(range(len(listDecoded))), y=listDecoded, mode="markers") )
+        fig = go.Figure(data = [go.Scatter(x=list(range(len(listDecoded))), y=listDecoded, mode = 'lines+markers')])
         fig.update_xaxes(rangeslider_visible=True)
         fig.layout.height = 700
         data = {
@@ -86,9 +85,21 @@ def beginTrading(n, data):
     if not n:
         raise PreventUpdate
     else:
-        response = requests.post('http://api:7071', {'data':data['data']}).json()
+        #response = requests.post('http://api:7071', {'data':data['data']}).json()
+        listDecoded = data['data']
+        fig = go.Figure(data = [go.Scatter(x=list(range(len(listDecoded))), y=listDecoded, mode = 'lines+markers')])
+        fig.layout.height = 700
         
+        data = [
+            {'id': '123a', 'OpenValue':1183, 'OpenIdx':0, 'CloseValue':1159.45,'CloseIdx':1},
+            {'id': '123b', 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4},
+        ]
+        for move in data:
+            fig.add_trace(go.Scatter(x = [move['OpenIdx'], move['CloseIdx']], y= [move['OpenValue'], move['CloseValue']],
+                name = move['id'],
+                mode = 'lines+markers') 
+            )
         
-        return [go.Figure(data = [go.Scatter(x=list(range(len([1,2,3,4]))), y=[2,4,6,8])]), 
+        return [fig, 
                 html.A('Ingresar otro archivo', href = '/dash/',style = {'color':'white', 'text-decoration':'None'}), 
                 None]
