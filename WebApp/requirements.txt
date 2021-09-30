@@ -14,3 +14,5 @@ six==1.16.0
 urllib3==1.26.7
 uWSGI==2.0.19.1
 Werkzeug==2.0.1
+dash
+dash-bootstrap-components

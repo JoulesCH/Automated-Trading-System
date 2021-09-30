@@ -8,9 +8,13 @@ services:
     volumes:
       - ./WebApp:/app
     environment: 
-      - FLASK_ENV=development
+      FLASK_ENV: development
     ports:
-      - "8000:8080"
+      - "8080:8080"
+    networks:
+      - local
+    depends_on:
+      - api
     expose:
       - 8080
   
@@ -21,9 +25,11 @@ services:
     volumes:
       - ./API:/app
     environment: 
-      - FLASK_ENV=development
+      FLASK_ENV: development
     ports:
-      - "8001:7070"
+      - "7070:7070"
+    networks:
+      - local
     expose:
       - 7070
 
@@ -32,10 +38,15 @@ services:
     container_name: nginx
     restart: always
     environment:
-      - FLASK_ENV=development
+      FLASK_ENV: development
     ports:
       - "80:80"
       - "70:70"
-      - "70:70"
+    networks:
+      - local
+  
+networks:
+  local:
+    driver: bridge
     
       
