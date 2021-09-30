@@ -6,6 +6,7 @@ from dash import html
 from .dashTemplates import navbar, loadFile
 
 layout = html.Div([
+    dcc.Store(id='memory'),
     navbar.navbar,
     html.Div([
         loadFile.load,
