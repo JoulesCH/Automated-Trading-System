@@ -15,7 +15,7 @@ import pandas as pd
 from dash import dcc
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
-
+from plotly.subplots import make_subplots
 
 @appD.callback(
     Output("navbar-collapse", "is_open"),
@@ -79,6 +79,7 @@ def update_output(content, filename, last_modified):
 @appD.callback(Output('tradeGraph', 'figure'), 
                 Output('beginButton', 'children'),
                 Output('formCapital', 'children'),
+                Output('tittle', 'children'),
                 Input("beginButton","n_clicks"),
                 State('memory', 'data'))
 def beginTrading(n, data):
@@ -87,19 +88,80 @@ def beginTrading(n, data):
     else:
         #response = requests.post('http://api:7071', {'data':data['data']}).json()
         listDecoded = data['data']
-        fig = go.Figure(data = [go.Scatter(x=list(range(len(listDecoded))), y=listDecoded, mode = 'lines+markers')])
+        fig = go.Figure(data = [go.Scatter(name='Datos Originales',x=list(range(len(listDecoded))), y=listDecoded, mode = 'lines+markers')])
         fig.layout.height = 700
-        
+        fig.update_xaxes(rangeslider_visible=True)
+        capital_ini = 2000
         data = [
-            {'id': '123a', 'OpenValue':1183, 'OpenIdx':0, 'CloseValue':1159.45,'CloseIdx':1},
-            {'id': '123b', 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4},
+            {'Movimiento': '123a','Volumen':3, 'OpenValue':1183, 'OpenIdx':0, 'CloseValue':1159.45,'CloseIdx':1, 'Balance':500},
+            {'Movimiento': '123b','Volumen':3, 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4, 'Balance':500},
+            {'Movimiento': '123c','Volumen':3, 'OpenValue':1143.45, 'OpenIdx':26, 'CloseValue':1200.05,'CloseIdx':103, 'Balance':500},
+            {'Movimiento': '123d','Volumen':3, 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4, 'Balance':500},
+            {'Movimiento': '123e','Volumen':3, 'OpenValue':1183, 'OpenIdx':0, 'CloseValue':1159.45,'CloseIdx':1, 'Balance':-500},
+            {'Movimiento': '123f','Volumen':3, 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4, 'Balance':-500},
+            {'Movimiento': '123g','Volumen':3, 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4, 'Balance':500},
+            {'Movimiento': '123h','Volumen':3, 'OpenValue':1183, 'OpenIdx':0, 'CloseValue':1159.45,'CloseIdx':1, 'Balance':500},
+            {'Movimiento': '123i','Volumen':3, 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4, 'Balance':500},
+            {'Movimiento': '123j','Volumen':3, 'OpenValue':1183, 'OpenIdx':0, 'CloseValue':1159.45,'CloseIdx':1, 'Balance':-500},
+            {'Movimiento': '123k','Volumen':3, 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4, 'Balance':500},
         ]
+        measures = ["absolute"]; x = ["Capital"]; y=[capital_ini]; text = ["Capital"]
         for move in data:
             fig.add_trace(go.Scatter(x = [move['OpenIdx'], move['CloseIdx']], y= [move['OpenValue'], move['CloseValue']],
-                name = move['id'],
+                name = move['Movimiento'],
                 mode = 'lines+markers') 
             )
-        
+            measures.append('relative')
+            x.append(move['Movimiento'])
+            y.append(move['Balance'])
+            text.append(f'{move["Balance"]}')
+        df = pd.DataFrame(data)
+        balances = []
+        for value in df['Balance']:
+            if value <= 0: balances.append(html.P(value, style = {'color':'red'}))
+            else: balances.append(html.P(value, style  ={'color':'green'}))
+
+        df['Balance'] = balances
+        fig2 = make_subplots(
+            rows=2, cols=1,
+            shared_xaxes=True,
+            vertical_spacing=0.03,
+            specs=[[{"type": "waterfall"}],
+                [{"type": "scatter"}],
+            ]
+        )
+        fig2.add_trace(
+            go.Waterfall(
+                name = "20", orientation = "v",
+                measure = measures,
+                x = x,
+                #textposition = "outside",
+                text = text,
+                y =y,
+                connector = {"line":{"color":"rgb(63, 63, 63)"}},
+            ), row=1, col=1
+        )
         return [fig, 
                 html.A('Ingresar otro archivo', href = '/dash/',style = {'color':'white', 'text-decoration':'None'}), 
-                None]
+                None, 
+                html.Div([
+                    dbc.Row(
+                    [   dbc.Col([
+                            html.H2('Movimientos efectuados'), 
+                            html.Div(
+                                dbc.Table.from_dataframe(df, striped=True, 
+                                                            responsive = True,
+                                                            bordered=True, hover=True,
+                                                            size = 'sm',
+                                ),
+                            style={'height': '300px', 'overflowY': 'auto'}                            
+                            ),
+                        ]),
+                        dbc.Col([
+                            html.H2('Resumen'),
+                            dcc.Graph(figure = fig2)
+                        ]),
+                    ]),
+                    html.H2('Gráfica de movimientos'),
+                ])
+                ]
