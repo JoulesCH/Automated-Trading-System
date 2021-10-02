@@ -65,13 +65,17 @@ int main(int argc, char * argv[]){
             printf("\n\n\n***** %d PRECIO: %f upper: %f lower: %f mean: %f std: %f*****\n", i, data, upper, lower, mean, std);  
 
             if( abs(data-upper)/data < ERROR  || abs(data-lower)/data < ERROR || data>upper || data< lower ){
-                capital_a_invertir = capital *MAX_INV;
+                capital_a_invertir = capital * MAX_INV;
                 if(abs(data-upper)/data < ERROR || data>upper){
+                    //    
                     printf("Vendiendo accion!!! DIF: %f",  abs(data-upper)/data);
+                
                 }
                 else{
-                    
-                    printf("\nComprando accion!!! Volumen: %f DIF: %f", capital_a_invertir/data, abs(data-lower)/data );
+                    if(capital_a_invertir/data > 0.1 ){
+                        printf("\nComprando accion!!! Volumen: %f DIF: %f", capital_a_invertir/data, abs(data-lower)/data );
+                        capital -= capital_a_invertir;
+                    }
                 }
             }
 
@@ -82,4 +86,6 @@ int main(int argc, char * argv[]){
     //printf("%f\t", Data.get(i)->info);
 
     printf("\n\n%s %s %f ",inputFile, outputFile, capital);
+    Data.free();
+    return 0;
 }
