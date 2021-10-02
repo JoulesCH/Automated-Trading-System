@@ -93,7 +93,7 @@ def beginTrading(n, localMemory, Capital):
         capital_ini = Capital
         
         response = requests.post('http://127.0.0.1:5050/', {'data':'*'.join(str(x) for x in localMemory['data']), 'capital':capital_ini, 'sma1': sma1, 'sma2':sma2}).json()
-        
+        print("***************THIS IS THE RESPONSE", response)
         listDecoded = localMemory['data']
 
         fig = go.Figure()
@@ -106,7 +106,7 @@ def beginTrading(n, localMemory, Capital):
         df_stock['upper'] = df_stock.SMA + 2*df_stock.stddev
         df_stock['lower'] = df_stock.SMA - 2*df_stock.stddev
 
-        print(df_stock.iloc[19:30,:])
+        #print(df_stock.iloc[19:30,:])
         fig.add_trace(go.Scatter(x = list(range(len(listDecoded))), y = df_stock.lower,mode = 'lines',  name = f'Lower',
                                     line = {'color': '#ff0000'}, fill = None ))
         fig.add_trace(go.Scatter(x = list(range(len(listDecoded))), y = df_stock.upper,mode = 'lines',  name = f'Upper',

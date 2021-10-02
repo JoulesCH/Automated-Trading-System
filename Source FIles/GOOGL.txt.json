@@ -1,0 +1,17 @@
+{
+	"data":[
+		{"Movimiento": "5508vNh", "Volumen": 1.580403, "OpenValue": 1138.950000, "OpenIdx": 23, "CloseValue": 1141.480000, "loseIdx": 64, "Balance": 3.998420},
+		{"Movimiento": "23ZKKZw", "Volumen": 0.158924, "OpenValue": 1132.620000, "OpenIdx": 24, "CloseValue": 1132.700000, "loseIdx": 63, "Balance": 0.012714},
+		{"Movimiento": "Ue43k5u", "Volumen": 1.502946, "OpenValue": 1200.050000, "OpenIdx": 102, "CloseValue": 1228.850000, "loseIdx": 109, "Balance": 43.284836},
+		{"Movimiento": "E0GRbPd", "Volumen": 0.151878, "OpenValue": 1187.540000, "OpenIdx": 103, "CloseValue": 1228.850000, "loseIdx": 109, "Balance": 6.274073},
+		{"Movimiento": "wqs1ws9", "Volumen": 1.538383, "OpenValue": 1201.400000, "OpenIdx": 111, "CloseValue": 1205.930000, "loseIdx": 116, "Balance": 6.968874},
+		{"Movimiento": "rEorFNB", "Volumen": 0.155088, "OpenValue": 1191.720000, "OpenIdx": 112, "CloseValue": 1198.000000, "loseIdx": 114, "Balance": 0.973952},
+		{"Movimiento": "aw62Y85", "Volumen": 1.569282, "OpenValue": 1182.300000, "OpenIdx": 117, "CloseValue": 1205.030000, "loseIdx": 224, "Balance": 35.669771},
+		{"Movimiento": "ID0WDEv", "Volumen": 0.161056, "OpenValue": 1152.000000, "OpenIdx": 118, "CloseValue": 1160.000000, "loseIdx": 222, "Balance": 1.288446},
+		{"Movimiento": "ndYjURk", "Volumen": 1.612692, "OpenValue": 1171.100000, "OpenIdx": 241, "CloseValue": 1198.570000, "loseIdx": 244, "Balance": 44.300660},
+		{"Movimiento": "OHrDVf5", "Volumen": 0.159485, "OpenValue": 1184.200000, "OpenIdx": 242, "CloseValue": 1198.570000, "loseIdx": 244, "Balance": 2.291803}
+	],
+	"capitalFinal":2145.063721,
+	"gain":145.063548,
+	"loss":0.000000
+}
