@@ -1,6 +1,7 @@
 # Built-in packages
 import base64
 import io
+import statistics
 
 # Local packages
 from views import appD
@@ -60,7 +61,7 @@ def update_output(content, filename, last_modified):
                 dbc.FormGroup(
                     [
                         dbc.Label("Capital inicial:"),
-                        dbc.Input(placeholder="Valor entero mayor a 0", type="number", min = 0, value = 2000.00),
+                        dbc.Input(placeholder="Valor entero mayor a 0", type="number", min = 0, value = 2000.00, id = 'Capital'),
                     ], style = {'width':'40%','margin-left':'auto', 'margin-right':'auto'}, id = 'formCapital'
                 ),
                 dbc.Button('¡Empezar a tradear!', color="primary", className="mr-1", id = 'beginButton'),
@@ -81,46 +82,90 @@ def update_output(content, filename, last_modified):
                 Output('formCapital', 'children'),
                 Output('tittle', 'children'),
                 Input("beginButton","n_clicks"),
-                State('memory', 'data'))
-def beginTrading(n, data):
+                State('memory', 'data'),
+                State('Capital','value'))
+def beginTrading(n, localMemory, Capital):
     if not n:
         raise PreventUpdate
     else:
-        #response = requests.post('http://api:7071', {'data':data['data']}).json()
-        listDecoded = data['data']
-        fig = go.Figure(data = [go.Scatter(name='Datos Originales',x=list(range(len(listDecoded))), y=listDecoded, mode = 'lines+markers')])
+        sma1 = 3
+        sma2 = 10
+        capital_ini = Capital
+        
+        response = requests.post('http://127.0.0.1:5050/', {'data':'*'.join(str(x) for x in localMemory['data']), 'capital':capital_ini, 'sma1': sma1, 'sma2':sma2}).json()
+        
+        listDecoded = localMemory['data']
+
+        fig = go.Figure()
         fig.layout.height = 700
         fig.update_xaxes(rangeslider_visible=True)
-        capital_ini = 2000
-        capital_final = 4500
-        data = [
-            {'Movimiento': '123a','Volumen':3, 'OpenValue':1183, 'OpenIdx':0, 'CloseValue':1159.45,'CloseIdx':1, 'Balance':500},
-            {'Movimiento': '123b','Volumen':3, 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4, 'Balance':500},
-            {'Movimiento': '123c','Volumen':3, 'OpenValue':1143.45, 'OpenIdx':26, 'CloseValue':1200.05,'CloseIdx':103, 'Balance':500},
-            {'Movimiento': '123d','Volumen':3, 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4, 'Balance':500},
-            {'Movimiento': '123e','Volumen':3, 'OpenValue':1183, 'OpenIdx':0, 'CloseValue':1159.45,'CloseIdx':1, 'Balance':-500},
-            {'Movimiento': '123f','Volumen':3, 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4, 'Balance':-500},
-            {'Movimiento': '123g','Volumen':3, 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4, 'Balance':500},
-            {'Movimiento': '123h','Volumen':3, 'OpenValue':1183, 'OpenIdx':0, 'CloseValue':1159.45,'CloseIdx':1, 'Balance':500},
-            {'Movimiento': '123i','Volumen':3, 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4, 'Balance':500},
-            {'Movimiento': '123j','Volumen':3, 'OpenValue':1183, 'OpenIdx':0, 'CloseValue':1159.45,'CloseIdx':1, 'Balance':-500},
-            {'Movimiento': '123k','Volumen':3, 'OpenValue':1193.8,'OpenIdx':3, 'CloseValue':1195.82, 'CloseIdx':4, 'Balance':500},
-        ]
+        
+        df_stock = pd.DataFrame({'close':listDecoded})
+        df_stock['SMA'] = df_stock.close.rolling(window = 20).mean()
+        df_stock['stddev'] = df_stock.close.rolling(window = 20).std()
+        df_stock['upper'] = df_stock.SMA + 2*df_stock.stddev
+        df_stock['lower'] = df_stock.SMA - 2*df_stock.stddev
+
+        print(df_stock.iloc[19:30,:])
+        fig.add_trace(go.Scatter(x = list(range(len(listDecoded))), y = df_stock.lower,mode = 'lines',  name = f'Lower',
+                                    line = {'color': '#ff0000'}, fill = None ))
+        fig.add_trace(go.Scatter(x = list(range(len(listDecoded))), y = df_stock.upper,mode = 'lines',  name = f'Upper',
+                                    line = {'color': '#000000'} , fill='tonexty', fillcolor = 'rgba(255, 0, 0, 0.1)' ))
+        
+        fig.add_trace(go.Scatter(name='Datos Originales',x=list(range(len(listDecoded))), y=listDecoded, mode = 'lines+markers',  
+                                line = {'color':'#636EFA'}))
+        
+        capital_final = response['capitalFinal']
+        gain = response['gain']
+        loss = response['loss']
+        data = response['data']
+
         measures = ["absolute"]; x = ["Capital Inicial"]; y=[capital_ini]; text = ["Capital Inicial"]
+
         for move in data:
             fig.add_trace(go.Scatter(x = [move['OpenIdx'], move['CloseIdx']], y= [move['OpenValue'], move['CloseValue']],
-                name = move['Movimiento'],
-                mode = 'lines+markers') 
+                                    name = move['Movimiento'],
+                                    mode = 'lines+markers',
+                                    marker_symbol = ['triangle-up', 'triangle-down'],
+                                    marker_color = ['green', 'red'],
+                                    marker_size=15,
+                                    #line = 
+                        ),
             )
             measures.append('relative')
             x.append(move['Movimiento'])
             y.append(move['Balance'])
             text.append(f'{move["Balance"]}')
+
+        sma1List = []
+        sma2List = []
+        for idx in range(len(listDecoded)):
+            sma1List.append(
+                statistics.mean(listDecoded[idx:idx+sma1])
+            )
+            sma2List.append(
+                statistics.mean(listDecoded[idx:idx+sma2])
+            )
+
+        fig.add_trace(go.Scatter(x = list(range(sma1, len(listDecoded))), y= sma1List,
+                                    name = f'SMA_{sma1}',
+                                    mode = 'lines',
+                                    line = {'color': '#FF8A8A'}
+                        ),
+        )
+
+        fig.add_trace(go.Scatter(x = list(range(sma2, len(listDecoded))), y= sma2List,
+                                    name = f'SMA_{sma2}',
+                                    mode = 'lines',
+                                    line = {'color': '#949494'}
+                        ),
+        )
         measures.append('total')
         x.append('Capital Final')
         y.append(capital_final)
         text.append('Capital Final')
         df = pd.DataFrame(data)
+
         balances = []
         for value in df['Balance']:
             if value <= 0: balances.append(html.P(value, style = {'color':'red'}))
@@ -129,7 +174,6 @@ def beginTrading(n, data):
         df['Balance'] = balances
         fig2 = make_subplots(
             rows=2, cols=2,
-            #shared_xaxes=True,
             vertical_spacing=0.1,
             specs=[[{'type':'domain'}, {'type':'domain'}],
                 [{"type": "waterfall", "colspan": 2}, None],
@@ -140,37 +184,43 @@ def beginTrading(n, data):
                 name = "20", orientation = "v",
                 measure = measures,
                 x = x,
-                #textposition = "outside",
                 text = text,
                 y =y,
                 connector = {"line":{"color":"rgb(63, 63, 63)"}},
             ), row=2, col=1
         )
-        labels = ["US", "China", "European Union", "Russian Federation", "Brazil", "India",
-          "Rest of World"]
+        labels = ["Gain", "Loss"]
 
-        # Create subplots: use 'domain' type for Pie subplot
-        #fig3 = make_subplots(rows=1, cols=2, specs=[[{'type':'domain'}, {'type':'domain'}]])
-        fig2.add_trace(go.Pie(labels=labels, values=[16, 15, 12, 6, 5, 4, 42], name="GHG Emissions", hole=.4,),
+        fig2.add_trace(go.Pie(labels=labels, values=[gain, loss], name="Gain vs Loss", hole=.9,
+                                title = {"text": "<span style='font-size:0.7em;color:gray'>Gain vs Loss</span>"}
+                            ),
                     1, 1)
-        fig2.add_trace(go.Pie(labels=labels, values=[27, 11, 25, 8, 1, 3, 25], name="CO2 Emissions", hole=.4,),
+
+        fig2.add_trace(go.Indicator(
+                        mode = "number+delta",
+                        value = capital_final,
+                        title = {"text": "<span style='font-size:0.7em;color:gray'>Balance final</span>"},
+                        delta = {'position': "bottom", 'reference': capital_ini, 'relative': False},
+                        ),
                     1, 2)
 
         fig2.update_layout(
             showlegend=False,
-            title_text="Global Emissions 1990-2011",
+            title_text="Datos relativos",
             autosize=True,
-            height=500
-            # Add annotations in the center of the donut pies.
-            #annotations=[dict(text='GHG', x=0.18, y=0.5, font_size=20, showarrow=False),
-            #            dict(text='CO2', x=0.82, y=0.5, font_size=20, showarrow=False)]
+            height=500,
         )
         return [fig, 
                 html.A('Ingresar otro archivo', href = '/dash/',style = {'color':'white', 'text-decoration':'None'}), 
                 None, 
                 html.Div([
                     dbc.Row(
-                    [   dbc.Col([
+                    [   
+                        dbc.Col([
+                            html.H2('Resumen'),
+                            dcc.Graph(figure = fig2, config={'autosizable':True})
+                        ]),
+                        dbc.Col([
                             html.H2('Movimientos efectuados'), 
                             html.Div(
                                 dbc.Table.from_dataframe(df, striped=True, 
@@ -180,10 +230,6 @@ def beginTrading(n, data):
                                 ),
                             style={'height': '500px', 'overflowY': 'auto'}                            
                             ),
-                        ]),
-                        dbc.Col([
-                            html.H2('Resumen'),
-                            dcc.Graph(figure = fig2, config={'autosizable':True})
                         ]),
                     ], style={'height':'500px','margin-bottom':'40px'}),
                     html.H2('Gráfica de movimientos', style={'margin-top':'20px'}),

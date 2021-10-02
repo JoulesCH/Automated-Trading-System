@@ -13,7 +13,7 @@
 
 #define MAX_SIZE_FILE_NAME 256
 #define WINDOW 20-1
-#define ERROR 0.01
+#define ERROR 0.03
 #define MAX_INV 0.8
 
 int main(int argc, char * argv[]){
@@ -55,10 +55,10 @@ int main(int argc, char * argv[]){
         if(i>= WINDOW){
             mean = sum/(WINDOW+1);
             num = 0;
-            for(int k = i-WINDOW; k<WINDOW+1; k++){
+            for(int k = i-WINDOW; k<=i; k++){
                 num= num + (Data.get(k)->info - mean)*(Data.get(k)->info - mean);
             }
-            std = sqrt(num/(WINDOW));
+            std = sqrt(num/(WINDOW+1));
             upper = mean + 2*std;
             lower = mean - 2*std; 
             
