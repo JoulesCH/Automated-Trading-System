@@ -2,7 +2,7 @@
 import base64
 import io
 import statistics
-
+from datetime import date
 # Local packages
 from views import appD
 
@@ -17,6 +17,7 @@ from dash import dcc
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from plotly.subplots import make_subplots
+import yfinance as yf
 
 @appD.callback(
     Output("navbar-collapse", "is_open"),
@@ -32,13 +33,26 @@ def toggle_navbar_collapse(n, is_open):
               Output('uploadFile', 'children'),
               Output('memory', 'data'),  
               Input('upload-data', 'contents'),
+              Input('goDownload', 'n_clicks'),
               State('upload-data', 'filename'),
-              State('upload-data', 'last_modified'))
-def update_output(content, filename, last_modified):
+              State('upload-data', 'last_modified'),
+              State('symbol', 'value'),
+              State('frequency', 'value'),
+              State('date-picker', 'start_date'),
+              State('date-picker', 'end_date'))
+def update_output(content, n, filename, last_modified, symbol, frequency, start, end):
+    print("***************************", start, end)
     if not filename:
-        raise PreventUpdate
+        if not n:
+            raise PreventUpdate
+        elif not symbol or not frequency or not frequency or not start or not end :
+            return dbc.Alert("Llena todos los datos", color="danger"), None, None
+        else:
+            listDecoded = yf.Ticker(symbol).history(period=frequency.lower(), start=start, end = end).Close.to_list()
+        
+
     elif filename[-4:] not in ['.txt', '.csv']:
-        return dbc.Alert("Tipo de archivo no permitido", color="danger"),
+        return dbc.Alert("Tipo de archivo no permitido", color="danger"), None, None
     else:
         content_type, content_string = content.split(',')
         decoded = base64.b64decode(content_string).decode('utf-8').replace('\r','')
@@ -47,15 +61,15 @@ def update_output(content, filename, last_modified):
         except:
             return dbc.Alert("Hay un dato no válido", color="danger"),
 
-        fig = go.Figure(data = [go.Scatter(x=list(range(len(listDecoded))), y=listDecoded, mode = 'lines+markers')])
-        fig.update_xaxes(rangeslider_visible=True)
-        fig.layout.height = 700
-        data = {
-            'filename':filename,
-            'last_modified':last_modified,
-            'data':listDecoded
-        }
-        return html.Div([
+    fig = go.Figure(data = [go.Scatter(x=list(range(len(listDecoded))), y=listDecoded, mode = 'lines+markers')])
+    fig.update_xaxes(rangeslider_visible=True)
+    fig.layout.height = 700
+    data = {
+        'filename':filename,
+        'last_modified':last_modified,
+        'data':listDecoded
+    }
+    return html.Div([
             dcc.Graph(figure = fig, animate  =  True, id = 'tradeGraph'),
             html.Div([
                 dbc.FormGroup(
@@ -75,7 +89,7 @@ def update_output(content, filename, last_modified):
                         "Revisa la gráfica y desliza hasta abajo para ingresar los datos faltantes", 
                     ], color="primary",duration=5000,
                 )
-        ]), data
+    ]), data
 
 @appD.callback(Output('tradeGraph', 'figure'), 
                 Output('beginButton', 'children'),
@@ -120,7 +134,7 @@ def beginTrading(n, localMemory, Capital):
         loss = response['loss']
         data = response['data']
 
-        measures = ["absolute"]; x = ["Capital Inicial"]; y=[capital_ini]; text = ["Capital Inicial"]
+        measures = ["absolute"]; x = ["Capital Inicial"]; y=[capital_ini-capital_ini]; text = ["Capital Inicial"]
 
         for move in data:
             fig.add_trace(go.Scatter(x = [move['OpenIdx'], move['CloseIdx']], y= [move['OpenValue'], move['CloseValue']],
@@ -162,7 +176,7 @@ def beginTrading(n, localMemory, Capital):
         )
         measures.append('total')
         x.append('Capital Final')
-        y.append(capital_final)
+        y.append(capital_final-capital_ini)
         text.append('Capital Final')
         df = pd.DataFrame(data)
 
@@ -187,6 +201,7 @@ def beginTrading(n, localMemory, Capital):
                 text = text,
                 y =y,
                 connector = {"line":{"color":"rgb(63, 63, 63)"}},
+                base = capital_ini
             ), row=2, col=1
         )
         labels = ["Gain", "Loss"]

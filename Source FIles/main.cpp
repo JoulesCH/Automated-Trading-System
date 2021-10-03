@@ -45,13 +45,16 @@ int main(int argc, char * argv[]){
     } else if(argc == 3){ 
         // Si el usuario ingresa dos argumentos, se toma el primero como el nombre de archivo a leer
         // y el segundo como el capital inicial
+        printf("\n0: %s 1: %s 2: %s 3:%s\n", argv[0], argv[1],argv[2],argv[3]);
         capital = atof(argv[2]);
         inputFile = argv[1];
-        outputFile = argv[1];
+        strcpy(outputFile, argv[1]);
+        //outputFile = argv[1];
         strcat(outputFile, ".json");
+        printf("\n0: %s 1: %s 2: %s 3:%s\n", argv[0], argv[1],argv[2],argv[3]);
     }
 
-    std::fstream myfile("GOOGL.txt", std::ios_base::in);
+    std::fstream myfile(inputFile, std::ios_base::in);
 
     double a;
     DoubleListMove DataOutput = DoubleListMove();
@@ -59,8 +62,8 @@ int main(int argc, char * argv[]){
     {
         Data.append(a);
     }
-    int j = 0;
-    double sum = 0, std, mean, upper, lower, data, capital_a_invertir, num, volumen, balance, gain=0, loss=0;
+    int j = 0,volumen;
+    double sum = 0, std, mean, upper, lower, data, capital_a_invertir, num, balance, gain=0, loss=0;
     Movement * Aux;
     for(int i = 0; i< Data.len; i++){
         data = Data.get(i)->info;
@@ -70,34 +73,34 @@ int main(int argc, char * argv[]){
             if(Aux->closeIdx==-98765){
                 balance= (data - Aux->openValue)*Aux->volumen;
                 if(balance<=(-1*STOP_LOSS)){
-                    printf("Vendiendo accion por STOP LOSS!!! balance: %f\n",  balance);
+                    printf("\nVendiendo accion por STOP LOSS!!! balance: %f\n",  balance);
                     loss -= balance;
                     Aux->closeValue = data;
                     Aux->closeIdx =i;
-                    Aux->balance= (Aux->openValue - Aux->closeValue)*Aux->volumen;
+                    Aux->balance= balance;
+                    capital += data*Aux->volumen;
                 }
             }
         }
         if(i>= WINDOW){
-            mean = sum/(WINDOW+1);
+            mean = sum/(WINDOW+1); //19-4
             num = 0;
-            for(int k = i-WINDOW; k<=i; k++){
-                num= num + (Data.get(k)->info - mean)*(Data.get(k)->info - mean);
+            for(int k = 0; k<= WINDOW; k++){
+                num= num + (Data.get(i-k)->info - mean)*(Data.get(i-k)->info - mean);
             }
-            std = sqrt(num/(WINDOW));
+            std = sqrt(num/(WINDOW+1));
             upper = mean + 2*std;
             lower = mean - 2*std; 
             
             printf("\n\n***** %d PRECIO: %f upper: %f lower: %f mean: %f std: %f*****\n", i, data, upper, lower, mean, std);  
 
             if( abs(data-upper)/data < ERROR  || abs(data-lower)/data < ERROR || data>upper || data< lower ){
-                capital_a_invertir = capital * MAX_INV;
                 if(abs(data-upper)/data < ERROR || data>upper){
                     //
                     for(int b = 0; b<DataOutput.len; b++){
                         Aux = DataOutput.get(b);
                         if( ((Aux->openValue)*TAKE_PROFIT) <= data &&   Aux->closeIdx == -98765 ){
-                            printf("Vendiendo accion en un máximo!!! DIF: %f\n",  abs(data-upper)/data);
+                            printf("\nVendiendo accion en un máximo!!! DIF: %f\n",  abs(data-upper)/data);
                             Aux->closeValue = data;
                             Aux->closeIdx =i;
                             Aux->balance= ( Aux->closeValue-Aux->openValue )*Aux->volumen;
@@ -111,22 +114,23 @@ int main(int argc, char * argv[]){
                 
                 }
                 else{
-                    volumen = capital_a_invertir/data;
+                    capital_a_invertir = capital * MAX_INV;
+                    volumen = ((int)capital_a_invertir/(int)data);
                     if(volumen> 0 ){
 
                         for (int i = 0; i < 7; ++i) 
                             *(tmp_s+i*sizeof(char)) = alphanum[rand() % (sizeof(alphanum) - 1)];
                         *(tmp_s+7*sizeof(char)) = '\0';
 
-                        printf("\nID: %s Comprando accion en un mínimo!!! Volumen: %f DIF: %f COSTO: %f", tmp_s,volumen, abs(data-lower)/data,volumen*data);
-                        capital -= capital_a_invertir;
+                        printf("\nID: %s Comprando accion en un mínimo!!! Volumen: %d DIF: %f COSTO: %f", tmp_s,volumen, abs(data-lower)/data,volumen*data);
+                        capital -= (data*volumen); //Verficar
                         srand( (unsigned) time(NULL) * getpid());
                         DataOutput.append( tmp_s, volumen, data, i, -98765, -98765, -98765 );
                     }
                 }
             }
 
-            printf("\n\n\n####### CAPITAL : %f #######\n\n\n", capital);
+            printf("\n\n\n####### CAPITAL : %f #######", capital);
             if(capital <= 0)
                 break;
 
@@ -146,12 +150,18 @@ int main(int argc, char * argv[]){
             *(tmp_s+i*sizeof(char)) = alphanum[rand() % (sizeof(alphanum) - 1)];
         *(tmp_s+7*sizeof(char)) = '\0';
         fprintf(json,"\n\t\t{%cMovimiento%c: %c%s%c,",34,34,34, tmp_s,34); 
-        fprintf(json," %cVolumen%c: %f,",34, 34, Aux->volumen); 
+        fprintf(json," %cVolumen%c: %i,",34, 34, Aux->volumen); 
         fprintf(json," %cOpenValue%c: %f,",34,34, Aux->openValue);
         fprintf(json," %cOpenIdx%c: %d,",34,34, Aux->openIdx);  
-        fprintf(json," %cCloseValue%c: %f,",34,34, Aux->closeValue);
-        fprintf(json," %cCloseIdx%c: %d,",34,34, Aux->closeIdx);
-        fprintf(json," %cBalance%c: %f}",34,34, Aux->balance);  
+        if( Aux->closeValue > 0){
+            fprintf(json," %cCloseValue%c: %f,",34,34, Aux->closeValue);
+            fprintf(json," %cCloseIdx%c: %d,",34,34, Aux->closeIdx);
+            fprintf(json," %cBalance%c: %f}",34,34, Aux->balance);  
+        }else{
+            fprintf(json," %cCloseValue%c: null,",34,34);
+            fprintf(json," %cCloseIdx%c: null,",34,34);
+            fprintf(json," %cBalance%c: null}",34,34);  
+        }
         if(b != DataOutput.len-1)
             fprintf(json,","); 
     }

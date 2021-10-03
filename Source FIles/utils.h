@@ -5,7 +5,7 @@
 
 typedef struct Movement{
     char  *id;
-    double volumen;
+    int volumen;
     double openValue;
     int openIdx;
     double closeValue;
