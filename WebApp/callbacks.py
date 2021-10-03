@@ -3,6 +3,12 @@ import base64
 import io
 import statistics
 from datetime import date
+import os
+import json
+from random import choice
+import string
+import time
+
 # Local packages
 from views import appD
 
@@ -67,7 +73,8 @@ def update_output(content, n, filename, last_modified, symbol, frequency, start,
     data = {
         'filename':filename,
         'last_modified':last_modified,
-        'data':listDecoded
+        'data':listDecoded,
+        'symbol': symbol  if symbol else filename[:filename.find('.')]
     }
     return html.Div([
             dcc.Graph(figure = fig, animate  =  True, id = 'tradeGraph'),
@@ -91,6 +98,23 @@ def update_output(content, n, filename, last_modified, symbol, frequency, start,
                 )
     ]), data
 
+def conect(data, capital, sma1, sma2):
+    filename = ''.join(choice(string.ascii_lowercase + string.ascii_uppercase) for _ in range(10)) + '.txt'
+    f = open(filename, "w")
+    f.write(data.replace('*',' '))
+    f.close()
+
+    # Se ejecuta el programa 
+    os.system(f"./main {filename} {capital}")
+    time.sleep(1)
+
+    # Se recolectan los datos
+    with open(f"{filename}.json") as json_file:
+        data = json.load(json_file)
+    os.system(f"rm {filename}")
+    os.system(f"rm {filename}.json")
+    return  data
+
 @appD.callback(Output('tradeGraph', 'figure'), 
                 Output('beginButton', 'children'),
                 Output('formCapital', 'children'),
@@ -106,8 +130,10 @@ def beginTrading(n, localMemory, Capital):
         sma2 = 10
         capital_ini = Capital
         
-        response = requests.post('http://127.0.0.1:5050/', {'data':'*'.join(str(x) for x in localMemory['data']), 'capital':capital_ini, 'sma1': sma1, 'sma2':sma2}).json()
-        print("***************THIS IS THE RESPONSE", response)
+        #response = requests.post('http://127.0.0.1:5050/', {'data':'*'.join(str(x) for x in localMemory['data']), 'capital':capital_ini, 'sma1': sma1, 'sma2':sma2}).json()
+        
+        response = conect(**{'data':'*'.join(str(x) for x in localMemory['data']), 'capital':capital_ini, 'sma1': sma1, 'sma2':sma2})
+
         listDecoded = localMemory['data']
 
         fig = go.Figure()
@@ -135,7 +161,12 @@ def beginTrading(n, localMemory, Capital):
         data = response['data']
 
         measures = ["absolute"]; x = ["Capital Inicial"]; y=[capital_ini-capital_ini]; text = ["Capital Inicial"]
-
+        if not data:
+            return [None,  
+                'Actualizar capital', 
+                [dbc.Label("Capital inicial:"),
+                dbc.Input(placeholder="Valor entero mayor a 0", type="number", min = 0, value = 2000.00, id = 'Capital')],
+                dbc.Alert("Capital insuficiente. Utiliza un capital que se iguale al precio ", color="danger")]
         for move in data:
             fig.add_trace(go.Scatter(x = [move['OpenIdx'], move['CloseIdx']], y= [move['OpenValue'], move['CloseValue']],
                                     name = move['Movimiento'],
@@ -182,7 +213,8 @@ def beginTrading(n, localMemory, Capital):
 
         balances = []
         for value in df['Balance']:
-            if value <= 0: balances.append(html.P(value, style = {'color':'red'}))
+            if not value: balances.append(html.P("", style = {'color':'red'}))
+            elif value <= 0: balances.append(html.P(value, style = {'color':'red'}))
             else: balances.append(html.P(value, style  ={'color':'green'}))
 
         df['Balance'] = balances
@@ -229,6 +261,7 @@ def beginTrading(n, localMemory, Capital):
                 html.A('Ingresar otro archivo', href = '/dash/',style = {'color':'white', 'text-decoration':'None'}), 
                 None, 
                 html.Div([
+                    html.H1('Resultados para ' + localMemory['symbol'], style = {'text-align':'center', 'margin-bottom':'30px'}),
                     dbc.Row(
                     [   
                         dbc.Col([

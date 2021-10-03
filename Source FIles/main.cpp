@@ -19,7 +19,7 @@
 #define ERROR 0.01
 #define MAX_INV 0.7
 #define STOP_LOSS 1000
-#define TAKE_PROFIT 1.05
+#define TAKE_PROFIT 1
 
 int main(int argc, char * argv[]){
     
