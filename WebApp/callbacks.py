@@ -8,6 +8,7 @@ import json
 from random import choice
 import string
 import time
+import subprocess
 
 # Local packages
 from views import appD
@@ -80,10 +81,33 @@ def update_output(content, n, filename, last_modified, symbol, frequency, start,
             dcc.Graph(figure = fig, animate  =  True, id = 'tradeGraph'),
             html.Div([
                 dbc.FormGroup(
-                    [
-                        dbc.Label("Capital inicial:"),
-                        dbc.Input(placeholder="Valor entero mayor a 0", type="number", min = 0, value = 2000.00, id = 'Capital'),
-                    ], style = {'width':'40%','margin-left':'auto', 'margin-right':'auto'}, id = 'formCapital'
+                    [   
+                        dbc.Row([
+                            dbc.Col([
+                                dbc.Label("Capital inicial:"),
+                                dbc.Input(placeholder="Valor entero mayor a 0", type="number", min = 0, value = 2000.00, id = 'Capital'),
+                            ]),
+                            dbc.Col([
+                                dbc.Label("Precisión:"),
+                                dbc.Input(placeholder="ERROR", type="number", min = 0, value = 0.01, id = 'ERROR'),
+                            ]),
+                            dbc.Col([
+                                dbc.Label("Máximo de inversión relativo:"),
+                                dbc.Input(placeholder="MAX_INV", type="number", min = 0, value = 0.7, id = 'MAX_INV'),
+                            ]),
+                        ]),
+                        dbc.Row([
+                            dbc.Col([
+                                dbc.Label("Stop Loss absoluto:"),
+                                dbc.Input(placeholder="STOP_LOSS", type="number", min = 0, value = 1000, id = 'STOP_LOSS'),
+                            ]),
+                            dbc.Col([
+                                dbc.Label("Take Profit relativo:"),
+                                dbc.Input(placeholder="TAKE_PROFIT", type="number", min = 1, value = 1, id = 'TAKE_PROFIT'),
+                            ]),
+                        ])
+
+                    ], style = {'width':'70%','margin-left':'auto', 'margin-right':'auto'}, id = 'formCapital'
                 ),
                 dbc.Button('¡Empezar a tradear!', color="primary", className="mr-1", id = 'beginButton'),
                 ],
@@ -98,21 +122,27 @@ def update_output(content, n, filename, last_modified, symbol, frequency, start,
                 )
     ]), data
 
-def conect(data, capital, sma1, sma2):
+def conect(data, capital, sma1, sma2, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT):
     filename = ''.join(choice(string.ascii_lowercase + string.ascii_uppercase) for _ in range(10)) + '.txt'
-    f = open(filename, "w")
-    f.write(data.replace('*',' '))
-    f.close()
+    # f = open(filename, "w")
+    # f.write(data.replace('*',' '))
+    # f.close()
 
     # Se ejecuta el programa 
-    os.system(f"./main {filename} {capital}")
-    time.sleep(1)
+    # os.system(f"./main {filename} {capital}")
+    # time.sleep(1)
+    parametros = [str(ERROR), str(MAX_INV), str(STOP_LOSS), str(TAKE_PROFIT)]
 
+    stdOutput = os.popen(f'./main {filename} {capital} {" ".join(parametros)} {data.replace("*", " ")}').read() 
+    #print(stdOutput, stdOutput[stdOutput.find('{'):])
+    stdOutput = stdOutput[stdOutput.find('{'):]
+    print('\n\n\n','*'*25, stdOutput, '*'*25,'\n\n\n' )
+    data = json.loads(stdOutput)
     # Se recolectan los datos
-    with open(f"{filename}.json") as json_file:
-        data = json.load(json_file)
-    os.system(f"rm {filename}")
-    os.system(f"rm {filename}.json")
+    # with open(f"{filename}.json") as json_file:
+    #     data = json.load(json_file)
+    # os.system(f"rm {filename}")
+    # os.system(f"rm {filename}.json")
     return  data
 
 @appD.callback(Output('tradeGraph', 'figure'), 
@@ -121,8 +151,13 @@ def conect(data, capital, sma1, sma2):
                 Output('tittle', 'children'),
                 Input("beginButton","n_clicks"),
                 State('memory', 'data'),
-                State('Capital','value'))
-def beginTrading(n, localMemory, Capital):
+                State('Capital','value'),
+                State('ERROR','value'),
+                State('MAX_INV','value'),
+                State('STOP_LOSS','value'),
+                State('TAKE_PROFIT','value'),
+                )
+def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT):
     if not n:
         raise PreventUpdate
     else:
@@ -132,7 +167,12 @@ def beginTrading(n, localMemory, Capital):
         
         #response = requests.post('http://127.0.0.1:5050/', {'data':'*'.join(str(x) for x in localMemory['data']), 'capital':capital_ini, 'sma1': sma1, 'sma2':sma2}).json()
         
-        response = conect(**{'data':'*'.join(str(x) for x in localMemory['data']), 'capital':capital_ini, 'sma1': sma1, 'sma2':sma2})
+        response = conect(ERROR = ERROR, MAX_INV = MAX_INV, STOP_LOSS =  STOP_LOSS, TAKE_PROFIT = TAKE_PROFIT,
+                            **{   'data':'*'.join(str(x) for x in localMemory['data']), 
+                                'capital':capital_ini, 
+                                'sma1': sma1, 
+                                'sma2':sma2,
+                                })
 
         listDecoded = localMemory['data']
 
@@ -258,17 +298,48 @@ def beginTrading(n, localMemory, Capital):
             height=500,
         )
         return [fig, 
-                html.A('Ingresar otro archivo', href = '/dash/',style = {'color':'white', 'text-decoration':'None'}), 
+                "Modificar parámetros", 
                 None, 
                 html.Div([
                     html.H1('Resultados para ' + localMemory['symbol'], style = {'text-align':'center', 'margin-bottom':'30px'}),
-                    dbc.Row(
-                    [   
-                        dbc.Col([
+                    html.H2('Parámetros ingresados:'),
+                    html.P("Modifica los parámetros y da clic al botón de hasta abajo"),
+                    dbc.FormGroup(
+                        [   
+                            dbc.Row([
+                                dbc.Col([
+                                    dbc.Label("Capital inicial:"),
+                                    dbc.Input(placeholder="Valor entero mayor a 0", type="number", min = 0, value = Capital, id = 'Capital'),
+                                ]),
+                                dbc.Col([
+                                    dbc.Label("Precisión:"),
+                                    dbc.Input(placeholder="ERROR", type="number", min = 0, value = ERROR, id = 'ERROR'),
+                                ]),
+                                dbc.Col([
+                                    dbc.Label("Máximo de inversión relativo:"),
+                                    dbc.Input(placeholder="MAX_INV", type="number", min = 0, value = MAX_INV, id = 'MAX_INV'),
+                                ]),
+                            ]),
+                            dbc.Row([
+                                dbc.Col([
+                                    dbc.Label("Stop Loss absoluto:"),
+                                    dbc.Input(placeholder="STOP_LOSS", type="number", min = 0, value = STOP_LOSS, id = 'STOP_LOSS'),
+                                ]),
+                                dbc.Col([
+                                    dbc.Label("Take Profit relativo:"),
+                                    dbc.Input(placeholder="TAKE_PROFIT", type="number", min = 1, value = TAKE_PROFIT, id = 'TAKE_PROFIT'),
+                                ]),
+                            ])
+
+                        ], style = {'width':'70%','margin-left':'auto', 'margin-right':'auto'}, id = 'formCapital'
+                    ),
+                    #dbc.Row(
+                    #[   
+                        #dbc.Col([
                             html.H2('Resumen'),
-                            dcc.Graph(figure = fig2, config={'autosizable':True})
-                        ]),
-                        dbc.Col([
+                            dcc.Graph(figure = fig2, config={'autosizable':True}),
+                        #]),
+                    #    dbc.Col([
                             html.H2('Movimientos efectuados'), 
                             html.Div(
                                 dbc.Table.from_dataframe(df, striped=True, 
@@ -278,8 +349,8 @@ def beginTrading(n, localMemory, Capital):
                                 ),
                             style={'height': '500px', 'overflowY': 'auto'}                            
                             ),
-                        ]),
-                    ], style={'height':'500px','margin-bottom':'40px'}),
+                    #    ]),
+                    #], style={'height':'500px','margin-bottom':'40px'}),
                     html.H2('Gráfica de movimientos', style={'margin-top':'20px'}),
                 ])
                 ]

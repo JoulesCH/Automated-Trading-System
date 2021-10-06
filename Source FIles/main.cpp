@@ -16,16 +16,16 @@
 
 #define MAX_SIZE_FILE_NAME 256
 #define WINDOW 20-1
-#define ERROR 0.01
-#define MAX_INV 0.7
-#define STOP_LOSS 1000
-#define TAKE_PROFIT 1
+// #define ERROR 0.01
+// #define MAX_INV 0.7
+// #define STOP_LOSS 1000
+// #define TAKE_PROFIT 1
 
 int main(int argc, char * argv[]){
     
     char *inputFile = (char*) malloc(MAX_SIZE_FILE_NAME*sizeof(char));
     char *outputFile = (char*) malloc(MAX_SIZE_FILE_NAME*sizeof(char));
-    float capital = 2000;
+    float capital = 2000, ERROR=0.01, MAX_INV=0.7, STOP_LOSS=1000, TAKE_PROFIT=1;
 
     static const char alphanum[] =
         "0123456789"
@@ -42,7 +42,7 @@ int main(int argc, char * argv[]){
         strcat(outputFile, inputFile);
         strcat(outputFile, ".json");
 
-    } else if(argc == 3){ 
+    } else{ 
         // Si el usuario ingresa dos argumentos, se toma el primero como el nombre de archivo a leer
         // y el segundo como el capital inicial
         printf("\n0: %s 1: %s 2: %s 3:%s\n", argv[0], argv[1],argv[2],argv[3]);
@@ -52,16 +52,28 @@ int main(int argc, char * argv[]){
         //outputFile = argv[1];
         strcat(outputFile, ".json");
         printf("\n0: %s 1: %s 2: %s 3:%s\n", argv[0], argv[1],argv[2],argv[3]);
+    
     }
-
-    std::fstream myfile(inputFile, std::ios_base::in);
-
+    
     double a;
     DoubleListMove DataOutput = DoubleListMove();
-    while (myfile >> a)
-    {
-        Data.append(a);
+    
+    if(argc <= 3){
+        std::fstream myfile(inputFile, std::ios_base::in);
+
+        while (myfile >> a)
+            Data.append(a);
+
+    }else{
+        ERROR=atof(argv[3]);
+        MAX_INV=atof(argv[4]);
+        STOP_LOSS=atof(argv[5]);
+        TAKE_PROFIT=atof(argv[6]);
+        for(int i = 7; i<argc; i++)
+            Data.append(atof(argv[i]));
+        printf("%f %f %f %f", ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT);
     }
+
     int j = 0,volumen;
     double sum = 0, std, mean, upper, lower, data, capital_a_invertir, num, balance, gain=0, loss=0;
     Movement * Aux;
@@ -139,40 +151,71 @@ int main(int argc, char * argv[]){
         }
     }
     //printf("%f\t", Data.get(i)->info);
-    FILE * json;
-    json = fopen(outputFile, "w+");
-    fprintf(json, "{\n");
+    if(argc <= 3){
+        FILE * json;
+        json = fopen(outputFile, "w+");
+        fprintf(json, "{\n");
 
-    fprintf(json,"\t%cdata%c:[",34,34);
-    for(int b=0; b< DataOutput.len; b++){
-        Aux = DataOutput.get(b);
-        for (int i = 0; i < 7; ++i) 
-            *(tmp_s+i*sizeof(char)) = alphanum[rand() % (sizeof(alphanum) - 1)];
-        *(tmp_s+7*sizeof(char)) = '\0';
-        fprintf(json,"\n\t\t{%cMovimiento%c: %c%s%c,",34,34,34, tmp_s,34); 
-        fprintf(json," %cVolumen%c: %i,",34, 34, Aux->volumen); 
-        fprintf(json," %cOpenValue%c: %f,",34,34, Aux->openValue);
-        fprintf(json," %cOpenIdx%c: %d,",34,34, Aux->openIdx);  
-        if( Aux->closeValue > 0){
-            fprintf(json," %cCloseValue%c: %f,",34,34, Aux->closeValue);
-            fprintf(json," %cCloseIdx%c: %d,",34,34, Aux->closeIdx);
-            fprintf(json," %cBalance%c: %f}",34,34, Aux->balance);  
-        }else{
-            fprintf(json," %cCloseValue%c: null,",34,34);
-            fprintf(json," %cCloseIdx%c: null,",34,34);
-            fprintf(json," %cBalance%c: null}",34,34);  
+        fprintf(json,"\t%cdata%c:[",34,34);
+        for(int b=0; b< DataOutput.len; b++){
+            Aux = DataOutput.get(b);
+            for (int i = 0; i < 7; ++i) 
+                *(tmp_s+i*sizeof(char)) = alphanum[rand() % (sizeof(alphanum) - 1)];
+            *(tmp_s+7*sizeof(char)) = '\0';
+            fprintf(json,"\n\t\t{%cMovimiento%c: %c%s%c,",34,34,34, tmp_s,34); 
+            fprintf(json," %cVolumen%c: %i,",34, 34, Aux->volumen); 
+            fprintf(json," %cOpenValue%c: %f,",34,34, Aux->openValue);
+            fprintf(json," %cOpenIdx%c: %d,",34,34, Aux->openIdx);  
+            if( Aux->closeValue > 0){
+                fprintf(json," %cCloseValue%c: %f,",34,34, Aux->closeValue);
+                fprintf(json," %cCloseIdx%c: %d,",34,34, Aux->closeIdx);
+                fprintf(json," %cBalance%c: %f}",34,34, Aux->balance);  
+            }else{
+                fprintf(json," %cCloseValue%c: null,",34,34);
+                fprintf(json," %cCloseIdx%c: null,",34,34);
+                fprintf(json," %cBalance%c: null}",34,34);  
+            }
+            if(b != DataOutput.len-1)
+                fprintf(json,","); 
         }
-        if(b != DataOutput.len-1)
-            fprintf(json,","); 
+        fprintf(json,"\n\t],");
+        fprintf(json,"\n\t%ccapitalFinal%c:%f,", 34,34,capital);
+        fprintf(json,"\n\t%cgain%c:%f,", 34,34,gain);
+        fprintf(json,"\n\t%closs%c:%f", 34,34,loss);
+        fprintf(json, "\n}");
+        fclose(json);
+        printf("\n\nCAPITAL FINAL: %f \n Se genero un archivo json (%s) con los movimientos", capital, outputFile);
+    }else{
+        printf("{\n");
+        printf("\t%cdata%c:[",34,34);
+        for(int b=0; b< DataOutput.len; b++){
+            Aux = DataOutput.get(b);
+            for (int i = 0; i < 7; ++i) 
+                *(tmp_s+i*sizeof(char)) = alphanum[rand() % (sizeof(alphanum) - 1)];
+            *(tmp_s+7*sizeof(char)) = '\0';
+            printf("\n\t\t{%cMovimiento%c: %c%s%c,",34,34,34, tmp_s,34); 
+            printf(" %cVolumen%c: %i,",34, 34, Aux->volumen); 
+            printf(" %cOpenValue%c: %f,",34,34, Aux->openValue);
+            printf(" %cOpenIdx%c: %d,",34,34, Aux->openIdx);  
+            if( Aux->closeValue > 0){
+                printf(" %cCloseValue%c: %f,",34,34, Aux->closeValue);
+                printf(" %cCloseIdx%c: %d,",34,34, Aux->closeIdx);
+                printf(" %cBalance%c: %f}",34,34, Aux->balance);  
+            }else{
+                printf(" %cCloseValue%c: null,",34,34);
+                printf(" %cCloseIdx%c: null,",34,34);
+                printf(" %cBalance%c: null}",34,34);  
+            }
+            if(b != DataOutput.len-1)
+                printf(","); 
+        }
+        printf("\n\t],");
+        printf("\n\t%ccapitalFinal%c:%f,", 34,34,capital);
+        printf("\n\t%cgain%c:%f,", 34,34,gain);
+        printf("\n\t%closs%c:%f", 34,34,loss);
+        printf( "\n}");
     }
-    fprintf(json,"\n\t],");
-    fprintf(json,"\n\t%ccapitalFinal%c:%f,", 34,34,capital);
-    fprintf(json,"\n\t%cgain%c:%f,", 34,34,gain);
-    fprintf(json,"\n\t%closs%c:%f", 34,34,loss);
-    fprintf(json, "\n}");
-    fclose(json);
 
-    printf("\n\n%s %s %f ",inputFile, outputFile, capital);
     Data.free();
     return 0;
 }
