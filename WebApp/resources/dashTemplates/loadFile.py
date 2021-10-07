@@ -5,11 +5,11 @@ from datetime import date
 
 load = html.Div([
     html.Div([
-        html.H2('Para empezar ingresa un archivo con los datos o elige un símbolo:'),
+        html.H2('Para empezar ingresa un archivo con los datos o elige un símbolo', style = {'margin-bottom':'40px'}),
         dbc.Row([
             dbc.Col(
                 [
-                html.H5("Subir un archivo:"),
+                html.H5("Subir un archivo:", style = {'color':'#a2adb2'}),
                 dcc.Upload(
                     id='upload-data',
                     children=html.Div([
@@ -35,7 +35,7 @@ load = html.Div([
                 ]
             ),
             dbc.Col([
-                html.H5("Descargar datos:"),
+                html.H5("Descargar datos:", style = {'color':'#a2adb2'}),
                 dbc.FormGroup(
                     [
                         dbc.Label("Selecciona un stock symbol: ", html_for="symbol"),
@@ -43,7 +43,7 @@ load = html.Div([
                                     id="symbol",
                                     options=[
                                         {"label": "AAPL - Apple, Inc.", "value": "AAPL"},
-                                        {"label": "GOOGL - Alphabet, Inc.", "value": "GOOGL"},
+                                        #{"label": "GOOGL - Alphabet, Inc.", "value": "GOOGL"},
                                         {"label": "TSLA - Tesla, Inc.", "value": "TSLA"},
                                         {"label": "AMZN - Amazon, Inc.", "value": "AMZN"},
                                         {"label": "BTC-USD - BITCOIN", "value": "BTC-USD"},
@@ -51,6 +51,7 @@ load = html.Div([
                                         {"label": "ETH-USD - ETHEREUM", "value": "ETH-USD"},
 
                                     ],
+                                    style = {'color':'black'}
                                 ),
                         dbc.Row([
                             dbc.Col([
@@ -69,6 +70,7 @@ load = html.Div([
                                         {"label": "W1", "value": "1wk"},
                                         {"label": "MN", "value": "1mo"},
                                     ],
+                                    style = {'color':'black'}
                                 ) ,# valid intervals: 1m,2m,5m,15m,30m,60m,90m,1h,1d,5d,1wk,1mo,3mo
                             ]),
                             dbc.Col([
@@ -84,7 +86,7 @@ load = html.Div([
                                 ),
                             ]),
                         ]),
-                        dbc.Button("Cargar datos", id='goDownload', color="primary", className="mr-1", style = {'width':'100%'}),    
+                        dbc.Button("Cargar datos", id='goDownload', color="primary", className="mr-1", style = {'margin-top':'10px','width':'100%'}),    
                     ]
                 )
             ])

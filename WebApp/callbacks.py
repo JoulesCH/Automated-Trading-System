@@ -71,6 +71,7 @@ def update_output(content, n, filename, last_modified, symbol, frequency, start,
     fig = go.Figure(data = [go.Scatter(x=list(range(len(listDecoded))), y=listDecoded, mode = 'lines+markers')])
     fig.update_xaxes(rangeslider_visible=True)
     fig.layout.height = 700
+    fig.update_layout(template='plotly_dark', paper_bgcolor="#001F40", plot_bgcolor = "#000F20")
     data = {
         'filename':filename,
         'last_modified':last_modified,
@@ -78,7 +79,10 @@ def update_output(content, n, filename, last_modified, symbol, frequency, start,
         'symbol': symbol  if symbol else filename[:filename.find('.')]
     }
     return html.Div([
-            dcc.Graph(figure = fig, animate  =  True, id = 'tradeGraph'),
+            html.H2(symbol  if symbol else filename[:filename.find('.')], style = {'margin-bottom':'40px'}),
+            html.Div([
+                dcc.Graph(figure = fig, animate  =  True, id = 'tradeGraph'),
+            ], id = 'grafico1'),
             html.Div([
                 dbc.FormGroup(
                     [   
@@ -89,21 +93,21 @@ def update_output(content, n, filename, last_modified, symbol, frequency, start,
                             ]),
                             dbc.Col([
                                 dbc.Label("Precisión:"),
-                                dbc.Input(placeholder="ERROR", type="number", min = 0, value = 0.01, id = 'ERROR'),
+                                dbc.Input(placeholder="ERROR", type="number", min = 0, value = 0.006, id = 'ERROR'),
                             ]),
                             dbc.Col([
                                 dbc.Label("Máximo de inversión relativo:"),
-                                dbc.Input(placeholder="MAX_INV", type="number", min = 0, value = 0.7, id = 'MAX_INV'),
+                                dbc.Input(placeholder="MAX_INV", type="number", min = 0, value = 0.4, id = 'MAX_INV'),
                             ]),
                         ]),
                         dbc.Row([
                             dbc.Col([
                                 dbc.Label("Stop Loss absoluto:"),
-                                dbc.Input(placeholder="STOP_LOSS", type="number", min = 0, value = 1000, id = 'STOP_LOSS'),
+                                dbc.Input(placeholder="STOP_LOSS", type="number", min = 0, value = 10000, id = 'STOP_LOSS'),
                             ]),
                             dbc.Col([
                                 dbc.Label("Take Profit relativo:"),
-                                dbc.Input(placeholder="TAKE_PROFIT", type="number", min = 1, value = 1, id = 'TAKE_PROFIT'),
+                                dbc.Input(placeholder="TAKE_PROFIT", type="number", min = 1, value = 1.03, id = 'TAKE_PROFIT'),
                             ]),
                         ])
 
@@ -145,10 +149,11 @@ def conect(data, capital, sma1, sma2, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT):
     # os.system(f"rm {filename}.json")
     return  data
 
-@appD.callback(Output('tradeGraph', 'figure'), 
+@appD.callback(Output('grafico1', 'children'), 
                 Output('beginButton', 'children'),
                 Output('formCapital', 'children'),
                 Output('tittle', 'children'),
+                Output('Results', 'children'),
                 Input("beginButton","n_clicks"),
                 State('memory', 'data'),
                 State('Capital','value'),
@@ -190,7 +195,7 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
         fig.add_trace(go.Scatter(x = list(range(len(listDecoded))), y = df_stock.lower,mode = 'lines',  name = f'Lower',
                                     line = {'color': '#ff0000'}, fill = None ))
         fig.add_trace(go.Scatter(x = list(range(len(listDecoded))), y = df_stock.upper,mode = 'lines',  name = f'Upper',
-                                    line = {'color': '#000000'} , fill='tonexty', fillcolor = 'rgba(255, 0, 0, 0.1)' ))
+                                    line = {'color': '#ffffff'} , fill='tonexty', fillcolor = 'rgba(255, 255, 255, 0.1)' ))
         
         fig.add_trace(go.Scatter(name='Datos Originales',x=list(range(len(listDecoded))), y=listDecoded, mode = 'lines+markers',  
                                 line = {'color':'#636EFA'}))
@@ -206,7 +211,7 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
                 'Actualizar capital', 
                 [dbc.Label("Capital inicial:"),
                 dbc.Input(placeholder="Valor entero mayor a 0", type="number", min = 0, value = 2000.00, id = 'Capital')],
-                dbc.Alert("Capital insuficiente. Utiliza un capital que se iguale al precio ", color="danger")]
+                dbc.Alert("Capital insuficiente. Utiliza un capital que se iguale al precio ", color="danger"), None]
         for move in data:
             fig.add_trace(go.Scatter(x = [move['OpenIdx'], move['CloseIdx']], y= [move['OpenValue'], move['CloseValue']],
                                     name = move['Movimiento'],
@@ -293,17 +298,43 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
 
         fig2.update_layout(
             showlegend=False,
-            title_text="Datos relativos",
-            autosize=True,
-            height=500,
+            #title_text="Datos relativos",
+            #autosize=True,
+            #height=500,
         )
-        return [fig, 
+        
+        fig.update_layout(template='plotly_dark', paper_bgcolor="#001F40", plot_bgcolor = "#000F20", margin=dict(l=5, r=5, t=5, b=5),
+            showlegend=False,)
+        
+        fig2.update_layout(template='plotly_dark', paper_bgcolor="#001F40", plot_bgcolor = "#000F20", margin=dict(l=5, r=5, t=5, b=5))
+        return [None, 
                 "Modificar parámetros", 
                 None, 
                 html.Div([
                     html.H1('Resultados para ' + localMemory['symbol'], style = {'text-align':'center', 'margin-bottom':'30px'}),
+                    html.H2('Resumen'),
+                    dcc.Graph(figure = fig2, config={'autosizable':True}),
+                   
+                    html.H2('Movimientos efectuados:'),
+                    dbc.Row([
+                        dbc.Col([ 
+                            html.Div(
+                                dbc.Table.from_dataframe(df, striped=True, 
+                                                            responsive = True,
+                                                            bordered=True, hover=True,
+                                                            size = 'sm',
+                                                            dark=True,
+                                ),
+                            style={'height': '700px', 'overflowY': 'auto', 'margin-top':'50px', 'padding':'0px'},
+                            className = 'tableHG'                            
+                            ),
+                        ], width=5, style = {'padding-right':'5px'}),
+                        dbc.Col([                    
+                            dcc.Graph(figure = fig, animate  =  True, style = {'padding':'0px'}),
+                        ], width=7, style = {'padding':'0px'}),
+                    ]),
                     html.H2('Parámetros ingresados:'),
-                    html.P("Modifica los parámetros y da clic al botón de hasta abajo"),
+                    html.P("Modifica los parámetros y da clic al botón"),
                     dbc.FormGroup(
                         [   
                             dbc.Row([
@@ -332,25 +363,17 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
                             ])
 
                         ], style = {'width':'70%','margin-left':'auto', 'margin-right':'auto'}, id = 'formCapital'
-                    ),
-                    #dbc.Row(
-                    #[   
-                        #dbc.Col([
-                            html.H2('Resumen'),
-                            dcc.Graph(figure = fig2, config={'autosizable':True}),
-                        #]),
-                    #    dbc.Col([
-                            html.H2('Movimientos efectuados'), 
-                            html.Div(
-                                dbc.Table.from_dataframe(df, striped=True, 
-                                                            responsive = True,
-                                                            bordered=True, hover=True,
-                                                            size = 'sm',
-                                ),
-                            style={'height': '500px', 'overflowY': 'auto'}                            
-                            ),
-                    #    ]),
-                    #], style={'height':'500px','margin-bottom':'40px'}),
-                    html.H2('Gráfica de movimientos', style={'margin-top':'20px'}),
-                ])
+                    ),    
+                
+                ]),
+                [
+                    dbc.Row([
+                        dbc.Col(f'Capital: {capital_final-capital_ini}', width=2),
+                        dbc.Col(f'Balance: {Capital}', width=2),
+                        dbc.Col(f'Margen: {Capital}', width=2),
+                        dbc.Col(f'Margen Libre: {Capital}', width=2),
+                        dbc.Col(f'Beneficio: {Capital}', width=2),
+                    ], justify="center",)
+                ],
+                        
                 ]

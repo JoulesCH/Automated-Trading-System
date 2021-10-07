@@ -1,0 +1,22 @@
+.navB{
+    background-color: #000F20!important;
+}
+
+/* .main-svg{
+    background-color: #001F40!important;
+} */
+
+.tableHG::-webkit-scrollbar {
+    width: 7px;
+    margin: 3px;
+}
+ 
+.tableHG::-webkit-scrollbar-track {
+    background-color:#001F40;
+    border-radius: 100px;
+}
+ 
+.tableHG::-webkit-scrollbar-thumb {
+    background-color: rgb(128, 139, 164);
+    border-radius: 100px;
+}

@@ -19,7 +19,7 @@ appD = Dash(
     external_stylesheets = [themes.BOOTSTRAP]
 )
 
-appD.layout = dash.layout
+appD.layout = dash.LAYOUT
 appD.title = 'Práctica 2 | EEDD'
 import callbacks
 app.route('/dash')(lambda: appD.index())
