@@ -14,12 +14,10 @@ import subprocess
 from views import appD
 
 # Installed packages
-import dash
+import humanize
 from dash.dependencies import Input, Output, State
 from dash import html
-import requests
 import plotly.graph_objects as go
-import plotly.express as px
 import pandas as pd
 from dash import dcc
 import dash_bootstrap_components as dbc
@@ -281,6 +279,7 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
         gain = response['gain']
         loss = response['loss']
         data = response['data']
+        balance = response['balance']
         if not data:
             return [None,  
                 'Actualizar capital', 
@@ -316,6 +315,7 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
                 dbc.Alert("Capital insuficiente. Utiliza un capital que se iguale al precio ", color="danger"), None]
         measures = ["absolute"]; x = ["Capital Inicial"]; y=[capital_ini-capital_ini]; text = ["Capital Inicial"]
         
+        suma_balances_cerrados = capital_ini
         for move in data:
             fig.add_trace(go.Scatter(x = [move['OpenIdx'], move['CloseIdx']], y= [move['OpenValue'], move['CloseValue']],
                                     name = move['Movimiento'],
@@ -326,10 +326,12 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
                                     #line = 
                         ),
             )
-            measures.append('relative')
-            x.append(move['Movimiento'])
-            y.append(move['Balance'])
-            text.append(f'{move["Balance"]}')
+            if move['Balance']:
+                measures.append('relative')
+                x.append(move['Movimiento'])
+                y.append(move['Balance'])
+                suma_balances_cerrados+=move['Balance']
+                text.append(f'{move["Balance"]}')
 
         sma1List = []
         sma2List = []
@@ -356,7 +358,7 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
         )
         measures.append('total')
         x.append('Capital Final')
-        y.append(capital_final-capital_ini)
+        y.append(capital_final)
         text.append('Capital Final')
         df = pd.DataFrame(data)
 
@@ -394,15 +396,15 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
 
         fig2.add_trace(go.Indicator(
                         mode = "number+delta",
-                        value = capital_final,
-                        title = {"text": "<span style='font-size:0.7em;color:gray'>Balance final</span>"},
+                        value = suma_balances_cerrados,
+                        title = {"text": "<span style='font-size:0.7em;color:gray'>Total ganado</span>"},
                         delta = {'position': "bottom", 'reference': capital_ini, 'relative': False},
                         ),
                     1, 2)
 
         fig2.update_layout(
             showlegend=False,
-            #title_text="Datos relativos",
+            #title_text="Resumen de movimientos cerrados",
             #autosize=True,
             #height=500,
         )
@@ -416,7 +418,7 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
                 None, 
                 html.Div([
                     html.H1('Resultados para ' + localMemory['symbol'], style = {'text-align':'center', 'margin-bottom':'30px'}),
-                    html.H2('Resumen'),
+                    html.H2(['Resumen de movimientos ', html.B('cerrados') ]),
                     dcc.Graph(figure = fig2, config={'autosizable':True}),
                    
                     html.H2('Movimientos efectuados:'),
@@ -472,15 +474,40 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
                 ]),
                 [
                     dbc.Row([
-                        dbc.Col(f'Capital: {capital_final}', width=2),
-                        dbc.Col(f'Balance: {Capital}', width=2),
-                        dbc.Col(f'Margen: {capital_final-capital_ini}', width=2),
-                        dbc.Col(f'Margen Libre: {Capital}%', width=2),
-                        dbc.Col(f'Beneficio: {Capital}', width=2),
-                    ], justify="center",)
+                        dbc.Col(f'Capital actual:', width=2, id ='1-target'),
+                        dbc.Col(f'Balance:', width=2, id ='2-target'),
+                        #dbc.Col(f'Margen: ${0}', width=2),
+                        #dbc.Col(f'Margen Libre: {0}%', width=2),
+                        dbc.Col(f'Beneficio actual:', width=2, id ='3-target'),
+                    ], justify="center", style = {"width":"100%", 'color': 'rgb(255, 132, 0)'}),
+                    dbc.Row([
+                        dbc.Col(f'${ humanize.intcomma(float(format(capital_final, ".2f")))}', width=2),
+                        dbc.Col(f'${humanize.intcomma(float( format(balance, ".2f") ))}', width=2),
+                        #dbc.Col(f'Margen: ${0}', width=2),
+                        #dbc.Col(f'Margen Libre: {0}%', width=2),
+                        dbc.Col(f'${ humanize.intcomma(float(format(balance-capital_final, ".2f")))}', width=2),
+                    ], justify="center", style = {"width":"100%"}),
+                ]+[
+                    dbc.Popover(
+                        [
+                            dbc.PopoverHeader("Header"),
+                            dbc.PopoverBody(f"This is a {placement} popover"),
+                        ],
+                        id=f"popover-{placement}",
+                        target=f"{placement}-target",
+                        placement="top",
+                        is_open=False,
+                        trigger = 'hover'
+                    ) for placement in [1,2,3]
+
                 ],
                         
                 ]
+
+
+
+
+
 from resources.dashTemplates import paths
 
 base = '/dash/'

@@ -19,7 +19,7 @@ LAYOUT = html.Div([
         
         dbc.Navbar(id='Results', color="dark",
                         dark=True,
-                        style = {'background-color':'#ffffff'},
+                        style = {'background-color':'#ffffff', "flex-flow":"wrap"},
                         sticky = "bottom",
                         fixed = "bottom",
                         className = 'navB')

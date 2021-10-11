@@ -193,9 +193,15 @@ int main(int argc, char * argv[]){
         }
     }
     
-    // Salida de datos:
-    // Si los datos vienen de un archivo, entonces se crea un archivo json con los movimientos
-    // Si los datos vienen de argumentos, solamente se imprimen en formato json
+    // Se calcula el balance
+    double balanceF = capital;
+    for(int b = 0; b<DataOutput.len; b++){
+        Aux = DataOutput.get(b);
+        // Se calculan los balances actuales para las posiciones que no se cerraron
+        if(Aux->closeIdx == -98765 ){
+            balanceF += Aux->volumen * data;
+        }
+    }
 
     if(argc <= 3){ // Creacion de un archivo json
         FILE * json;
@@ -227,7 +233,8 @@ int main(int argc, char * argv[]){
         fprintf(json,"\n\t],");
         fprintf(json,"\n\t%ccapitalFinal%c:%f,", 34,34,capital);
         fprintf(json,"\n\t%cgain%c:%f,", 34,34,gain);
-        fprintf(json,"\n\t%closs%c:%f", 34,34,loss);
+        fprintf(json,"\n\t%closs%c:%f,", 34,34,loss);
+        fprintf(json,"\n\t%cbalance%c:%f", 34,34,balanceF);
         fprintf(json, "\n}");
         fclose(json);
         printf("\n\nCAPITAL FINAL: %f \n Se genero un archivo json (%s) con los movimientos", capital, outputFile);
@@ -258,7 +265,8 @@ int main(int argc, char * argv[]){
         printf("\n\t],");
         printf("\n\t%ccapitalFinal%c:%f,", 34,34,capital);
         printf("\n\t%cgain%c:%f,", 34,34,gain);
-        printf("\n\t%closs%c:%f", 34,34,loss);
+        printf("\n\t%closs%c:%f,", 34,34,loss);
+        printf("\n\t%cbalance%c:%f", 34,34,balanceF);
         printf( "\n}");
     }
 
