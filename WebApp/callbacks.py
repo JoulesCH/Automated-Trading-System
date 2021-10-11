@@ -474,11 +474,11 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
                 ]),
                 [
                     dbc.Row([
-                        dbc.Col(f'Capital actual:', width=2, id ='1-target'),
-                        dbc.Col(f'Balance:', width=2, id ='2-target'),
+                        dbc.Col(f'Capital actual (ℹ)', width=2, id ='p-1-target'),
+                        dbc.Col(f'Balance (ℹ)', width=2, id ='p-2-target'),
                         #dbc.Col(f'Margen: ${0}', width=2),
                         #dbc.Col(f'Margen Libre: {0}%', width=2),
-                        dbc.Col(f'Beneficio actual:', width=2, id ='3-target'),
+                        dbc.Col(f'Beneficio actual (ℹ)', width=2, id ='p-3-target'),
                     ], justify="center", style = {"width":"100%", 'color': 'rgb(255, 132, 0)'}),
                     dbc.Row([
                         dbc.Col(f'${ humanize.intcomma(float(format(capital_final, ".2f")))}', width=2),
@@ -490,21 +490,23 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
                 ]+[
                     dbc.Popover(
                         [
-                            dbc.PopoverHeader("Header"),
-                            dbc.PopoverBody(f"This is a {placement} popover"),
+                            dbc.PopoverHeader(title),
+                            dbc.PopoverBody(desc),
                         ],
                         id=f"popover-{placement}",
-                        target=f"{placement}-target",
+                        target=f"p-{placement}-target",
                         placement="top",
                         is_open=False,
                         trigger = 'hover'
-                    ) for placement in [1,2,3]
+                    ) for placement, title, desc in zip([1,2,3],['Info']*3, ["Capital sin tomar en cuenta el cierre de posiciones abiertas",
+                                                                            "Patrimonio contando el valor actual de las posiciones abiertas ",
+                                                                            "Ganacia/perdida de las posiciones abiertas"
+                                                                            ]
+                                                    )
 
                 ],
                         
                 ]
-
-
 
 
 
