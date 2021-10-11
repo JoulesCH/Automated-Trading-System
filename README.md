@@ -2,6 +2,13 @@
 
 
 Práctica 2
+
+### Aplicación web 🔗
+![image](https://user-images.githubusercontent.com/66523396/136731339-fd039a7c-1312-4b4a-894c-01fc03d491f7.png)
+
+Creada en Flask y alojada en google cloud:
+https://oval-silicon-327905.wl.r.appspot.com
+
 ### Pre-requerimientos ⚙️
 
 - **Marco Teórico** Investigar los siguientes conceptos:
