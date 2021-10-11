@@ -14,6 +14,7 @@ import subprocess
 from views import appD
 
 # Installed packages
+import dash
 from dash.dependencies import Input, Output, State
 from dash import html
 import requests
@@ -84,6 +85,36 @@ def update_output(content, n, filename, last_modified, symbol, frequency, start,
                 dcc.Graph(figure = fig, animate  =  True, id = 'tradeGraph'),
             ], id = 'grafico1'),
             html.Div([
+                html.Div([
+                dbc.Card(
+                    [
+                        dbc.CardHeader(
+                            html.H2(
+                                dbc.Button(
+                                    f"¿No estás seguro de los parámetros? Da clic y abre el glosario",
+                                    color="link",
+                                    id=f"group-1-toggle",
+                                    n_clicks=0,
+                                )
+                            )
+                        ),
+                        dbc.Collapse(
+                            dbc.CardBody([
+                                html.Ul([
+                                    html.Li([html.B("Precisión"), ": Representa el margen de error con el que se decide si un punto es de soporte o de resistencia"]),
+                                    html.Li([html.B("Máximo de inversión"), ": Indica el monto máximo que se puede invertir, es relativo al capital disponible"]),
+                                    html.Li([html.B("Stop Loss"), ": La posición se cerrará cuando se haya perdido esta cantidad"]),
+                                    html.Li([html.B("Take Profit"), ": Cuando la ganancia sea igual al precio de apertura multiplicado por este parámetro, entonces se cerrará la posición"]),
+                                ])
+                            ]),
+                            id=f"collapse-1",
+                            is_open=False,
+                        ),
+                    ]
+                ),
+
+                ], className="accordion", style = {'text-align':'left','color':'black','width':'70%','margin-left':'auto', 'margin-right':'auto', 'margin-bottom':'30px'}),
+
                 dbc.FormGroup(
                     [   
                         dbc.Row([
@@ -97,7 +128,7 @@ def update_output(content, n, filename, last_modified, symbol, frequency, start,
                             ]),
                             dbc.Col([
                                 dbc.Label("Máximo de inversión relativo:"),
-                                dbc.Input(placeholder="MAX_INV", type="number", min = 0, value = 0.4, id = 'MAX_INV'),
+                                dbc.Input(placeholder="MAX_INV", type="number", min = 0, value = 0.8, id = 'MAX_INV'),
                             ]),
                         ]),
                         dbc.Row([
@@ -107,7 +138,7 @@ def update_output(content, n, filename, last_modified, symbol, frequency, start,
                             ]),
                             dbc.Col([
                                 dbc.Label("Take Profit relativo:"),
-                                dbc.Input(placeholder="TAKE_PROFIT", type="number", min = 1, value = 1.03, id = 'TAKE_PROFIT'),
+                                dbc.Input(placeholder="TAKE_PROFIT", type="number", min = 1, value = 1.02, id = 'TAKE_PROFIT'),
                             ]),
                         ])
 
@@ -126,6 +157,18 @@ def update_output(content, n, filename, last_modified, symbol, frequency, start,
                 )
     ]), data
 
+
+i = 1
+@appD.callback(
+    Output(f"collapse-{i}", "is_open") ,
+    Input(f"group-{i}-toggle", "n_clicks"),
+    State(f"collapse-{i}", "is_open"),
+)
+def toggle_accordion(n1, is_open1):
+    if n1:
+        return not is_open1
+    return is_open1
+
 def conect(data, capital, sma1, sma2, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT):
     filename = ''.join(choice(string.ascii_lowercase + string.ascii_uppercase) for _ in range(10)) + '.txt'
     # f = open(filename, "w")
@@ -141,6 +184,8 @@ def conect(data, capital, sma1, sma2, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT):
     #print(stdOutput, stdOutput[stdOutput.find('{'):])
     stdOutput = stdOutput[stdOutput.find('{'):]
     print('\n\n\n','*'*25, stdOutput, '*'*25,'\n\n\n' )
+    if not stdOutput:
+        return None
     data = json.loads(stdOutput)
     # Se recolectan los datos
     # with open(f"{filename}.json") as json_file:
@@ -178,7 +223,39 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
                                 'sma1': sma1, 
                                 'sma2':sma2,
                                 })
+        if not response:
+            return [None,  
+                'Actualizar capital', 
+                [dbc.FormGroup(
+                        [   
+                            dbc.Row([
+                                dbc.Col([
+                                    dbc.Label("Capital inicial:"),
+                                    dbc.Input(placeholder="Valor entero mayor a 0", type="number", min = 0, value = Capital, id = 'Capital'),
+                                ]),
+                                dbc.Col([
+                                    dbc.Label("Precisión:"),
+                                    dbc.Input(placeholder="ERROR", type="number", min = 0, value = ERROR, id = 'ERROR'),
+                                ]),
+                                dbc.Col([
+                                    dbc.Label("Máximo de inversión relativo:"),
+                                    dbc.Input(placeholder="MAX_INV", type="number", min = 0, value = MAX_INV, id = 'MAX_INV'),
+                                ]),
+                            ]),
+                            dbc.Row([
+                                dbc.Col([
+                                    dbc.Label("Stop Loss absoluto:"),
+                                    dbc.Input(placeholder="STOP_LOSS", type="number", min = 0, value = STOP_LOSS, id = 'STOP_LOSS'),
+                                ]),
+                                dbc.Col([
+                                    dbc.Label("Take Profit relativo:"),
+                                    dbc.Input(placeholder="TAKE_PROFIT", type="number", min = 1, value = TAKE_PROFIT, id = 'TAKE_PROFIT'),
+                                ]),
+                            ])
 
+                        ], style = {'width':'70%','margin-left':'auto', 'margin-right':'auto'}, id = 'formCapital'
+                    ),  ],
+                dbc.Alert("Capital insuficiente. Utiliza un capital que se iguale al precio ", color="danger"), None]
         listDecoded = localMemory['data']
 
         fig = go.Figure()
@@ -204,14 +281,41 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
         gain = response['gain']
         loss = response['loss']
         data = response['data']
-
-        measures = ["absolute"]; x = ["Capital Inicial"]; y=[capital_ini-capital_ini]; text = ["Capital Inicial"]
         if not data:
             return [None,  
                 'Actualizar capital', 
-                [dbc.Label("Capital inicial:"),
-                dbc.Input(placeholder="Valor entero mayor a 0", type="number", min = 0, value = 2000.00, id = 'Capital')],
+                [dbc.FormGroup(
+                        [   
+                            dbc.Row([
+                                dbc.Col([
+                                    dbc.Label("Capital inicial:"),
+                                    dbc.Input(placeholder="Valor entero mayor a 0", type="number", min = 0, value = Capital, id = 'Capital'),
+                                ]),
+                                dbc.Col([
+                                    dbc.Label("Precisión:"),
+                                    dbc.Input(placeholder="ERROR", type="number", min = 0, value = ERROR, id = 'ERROR'),
+                                ]),
+                                dbc.Col([
+                                    dbc.Label("Máximo de inversión relativo:"),
+                                    dbc.Input(placeholder="MAX_INV", type="number", min = 0, value = MAX_INV, id = 'MAX_INV'),
+                                ]),
+                            ]),
+                            dbc.Row([
+                                dbc.Col([
+                                    dbc.Label("Stop Loss absoluto:"),
+                                    dbc.Input(placeholder="STOP_LOSS", type="number", min = 0, value = STOP_LOSS, id = 'STOP_LOSS'),
+                                ]),
+                                dbc.Col([
+                                    dbc.Label("Take Profit relativo:"),
+                                    dbc.Input(placeholder="TAKE_PROFIT", type="number", min = 1, value = TAKE_PROFIT, id = 'TAKE_PROFIT'),
+                                ]),
+                            ])
+
+                        ], style = {'width':'70%','margin-left':'auto', 'margin-right':'auto'}, id = 'formCapital'
+                    ),  ],
                 dbc.Alert("Capital insuficiente. Utiliza un capital que se iguale al precio ", color="danger"), None]
+        measures = ["absolute"]; x = ["Capital Inicial"]; y=[capital_ini-capital_ini]; text = ["Capital Inicial"]
+        
         for move in data:
             fig.add_trace(go.Scatter(x = [move['OpenIdx'], move['CloseIdx']], y= [move['OpenValue'], move['CloseValue']],
                                     name = move['Movimiento'],
@@ -368,12 +472,30 @@ def beginTrading(n, localMemory, Capital, ERROR, MAX_INV, STOP_LOSS, TAKE_PROFIT
                 ]),
                 [
                     dbc.Row([
-                        dbc.Col(f'Capital: {capital_final-capital_ini}', width=2),
+                        dbc.Col(f'Capital: {capital_final}', width=2),
                         dbc.Col(f'Balance: {Capital}', width=2),
-                        dbc.Col(f'Margen: {Capital}', width=2),
-                        dbc.Col(f'Margen Libre: {Capital}', width=2),
+                        dbc.Col(f'Margen: {capital_final-capital_ini}', width=2),
+                        dbc.Col(f'Margen Libre: {Capital}%', width=2),
                         dbc.Col(f'Beneficio: {Capital}', width=2),
                     ], justify="center",)
                 ],
                         
                 ]
+from resources.dashTemplates import paths
+
+base = '/dash/'
+paths = {
+    base+'mt':paths.marco_teorico,
+    base+'d': paths.diagrama,
+    base+'r':paths.repositorio,
+    base+'p':paths.pruebas,
+    base+'c':paths.conclusiones  
+}
+
+@appD.callback(Output('principalLaout', 'children'),
+                Input('url', 'pathname'))
+def updatePrincipalLayout(pathname):
+    print(pathname)
+    if pathname == '/dash/' or pathname not in paths:
+        raise PreventUpdate
+    return paths[pathname]

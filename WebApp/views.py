@@ -20,7 +20,8 @@ appD = Dash(
 )
 
 appD.layout = dash.LAYOUT
-appD.title = 'Práctica 2 | EEDD'
+appD.title = 'Práctica 2 | Equipo 8'
+appD.debug = True
 import callbacks
 app.route('/dash')(lambda: appD.index())
 
