@@ -11,6 +11,7 @@ Práctica 2
   - Posición Corta (Short Position)
   - Posición Larga (Long Position)
 - **Diagrama** Entregar en forma de diagrama de bloques o pseudocódigo el algoritmo que se diseñó para generar el programa.
+![image](https://user-images.githubusercontent.com/66523396/136708868-0f89c64d-3a51-4b39-b626-1e7adda3cb9c.png)
 
 ### Requerimientos 📋
 El código debe ser de tipo .c o .cpp. El código debe estar **tabulado y comentado**.
